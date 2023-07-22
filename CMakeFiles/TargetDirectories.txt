@@ -1,0 +1,3 @@
+/opt/pylon/share/pylon/Samples/C++/Grab_ChunkImage/CMakeFiles/rebuild_cache.dir
+/opt/pylon/share/pylon/Samples/C++/Grab_ChunkImage/CMakeFiles/edit_cache.dir
+/opt/pylon/share/pylon/Samples/C++/Grab_ChunkImage/CMakeFiles/basler_test.dir
