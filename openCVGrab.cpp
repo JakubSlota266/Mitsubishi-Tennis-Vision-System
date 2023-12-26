@@ -3,6 +3,7 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc.hpp>
 #include <vector>
+#include <chrono>
 
 // Include files to use the PYLON API.
 #include <pylon/PylonIncludes.h>
@@ -22,6 +23,9 @@ using namespace cv;
 // Namespace for using cout.
 using namespace std;
 
+// Namespace for time
+using namespace std::chrono;
+
 // Number of images to be grabbed.
 static const uint32_t c_countOfImagesToGrab = 1000;
 Scalar orangeLow = Scalar(15, 200, 140);
@@ -31,7 +35,9 @@ int main(int argc, char* argv[])
 {
     // The exit code of the sample application.
     int exitCode = 0;
-
+    int frames = 0;
+	bool alreadyCounting = false;
+	
     // Automagically call PylonInitialize and PylonTerminate to ensure the pylon runtime system
     // is initialized during the lifetime of this object.
     Pylon::PylonAutoInitTerm autoInitTerm;
@@ -68,8 +74,19 @@ int main(int argc, char* argv[])
 
         // Camera.StopGrabbing() is called automatically by the RetrieveResult() method
         // when c_countOfImagesToGrab images have been retrieved.
+		std::chrono::high_resolution_clock::time_point  start;
+		std::chrono::high_resolution_clock::time_point  end;
+		Mat background;
+		Mat mask;
+		vector < vector < Point >> contours;
         while ( camera.IsGrabbing())
         {
+            
+            if(!alreadyCounting){
+				start = high_resolution_clock::now();
+				alreadyCounting = true;
+			}
+            frames++;
             // Wait for an image and then retrieve it. A timeout of 5000 ms is used.
             camera.RetrieveResult( 50, ptrGrabResult, TimeoutHandling_ThrowException);
 
@@ -90,30 +107,36 @@ int main(int argc, char* argv[])
 		openCvImage= cv::Mat(ptrGrabResult->GetHeight(), ptrGrabResult->GetWidth(), CV_8UC3, (uint8_t *) pylonImage.GetBuffer());
 
 		// Create a display window
-		namedWindow( "OpenCV Display Window", WINDOW_NORMAL);//AUTOSIZE //FREERATIO
+		//namedWindow( "OpenCV Display Window", WINDOW_NORMAL);//AUTOSIZE //FREERATIO
 		// Display the current image with opencv
 		
-		Mat background;
 		openCvImage.copyTo(background);
 		cvtColor(openCvImage, openCvImage, COLOR_BGR2HSV);
 
-		Mat mask;
+		
 		inRange(openCvImage, orangeLow, orangeHigh, mask);
-		vector < vector < Point >> contours;
+		
 
 		findContours(mask, contours, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
 		//drawContours(background, contours, -1, (0, 255, 0), 3);
-
+		
 		for (size_t i = 0; i < contours.size(); i++)
 		{
 			Rect boundRect = boundingRect(contours[i]);
 			if (boundRect.area() > 200 && (boundRect.width < 70 || boundRect.height < 70))
 			{
 			std::cout << "Coordinates: X = " << boundRect.tl().x + 1 / 2 * boundRect.br().x
-                    << ", Y = , " << boundRect.tl().y - 1 / 2 * boundRect.br().y << '\n';
-                
+                    << ", Y = , " << boundRect.tl().y - 1 / 2 * boundRect.br().y << endl;   
 			rectangle(background, boundRect.tl(), boundRect.br(), (0, 0, 0), 3);
 			}  
+		}
+	
+		end = high_resolution_clock::now();
+		if(duration_cast<microseconds>(end - start) > 1000000us)
+		{
+			std::cout << "FPS: " << frames << endl;
+			alreadyCounting = false;
+			frames = 0;
 		}
 		
 		//imshow("Contorus", background);
@@ -121,7 +144,7 @@ int main(int argc, char* argv[])
 		// '0' means indefinite, i.e. the next image will be displayed after closing the window 
 		// '1' means live stream
 		waitKey(1);
-		imshow("tracking", background); 
+		//imshow("tracking", background); 
 
             }
             else
