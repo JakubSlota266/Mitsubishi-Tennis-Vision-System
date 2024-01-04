@@ -2616,7 +2616,7 @@ GenApi/GenApiNamespace.h
 pylon/TypeMappings.h
 -
 
-/opt/pylon/share/pylon/Samples/C++/Grab_ChunkImage/openCVGrab.cpp
+/opt/pylon/share/pylon/Samples/C++/test/openCVGrab.cpp
 opencv2/core/core.hpp
 -
 opencv2/highgui/highgui.hpp
@@ -2630,5 +2630,19 @@ chrono
 pylon/PylonIncludes.h
 -
 sstream
+-
+stdio.h
+-
+stdlib.h
+-
+string.h
+-
+sys/socket.h
+-
+sys/types.h
+-
+netinet/in.h
+-
+arpa/inet.h
 -
 

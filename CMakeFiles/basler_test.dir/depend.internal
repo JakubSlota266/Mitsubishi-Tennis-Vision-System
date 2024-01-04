@@ -257,4 +257,4 @@ CMakeFiles/basler_test.dir/openCVGrab.cpp.o
  /opt/pylon/include/pylon/_VideoWriterParams.h
  /opt/pylon/include/pylon/api_autoconf.h
  /opt/pylon/include/pylon/stdinclude.h
- /opt/pylon/share/pylon/Samples/C++/Grab_ChunkImage/openCVGrab.cpp
+ /opt/pylon/share/pylon/Samples/C++/test/openCVGrab.cpp

@@ -11,6 +11,19 @@
 // Use sstream to create image names including integer
 #include <sstream>
 
+// Sockets
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+
+#define MAX_MSG_LEN 24
+#define SERWER_IP "192.168.138.109"
+#define MAX_CONNECTION 10
+
 // Namespace for using pylon objects.
 using namespace Pylon;
 
@@ -36,8 +49,52 @@ int main(int argc, char* argv[])
     // The exit code of the sample application.
     int exitCode = 0;
     int frames = 0;
-	bool alreadyCounting = false;
-	
+    int x_s = 0;
+    int y_s = 0;
+    int port = 55555;
+    char buffer[ MAX_MSG_LEN ] = {};
+    struct sockaddr_in client = { };
+    struct sockaddr_in serwer =
+    {
+        .sin_family = AF_INET,
+        .sin_port = htons( port )
+    };
+    if( inet_pton( AF_INET, SERWER_IP, & serwer.sin_addr ) <= 0 )
+    {
+        perror( "inet_pton() ERROR" );
+        exit( 1 );
+    }
+   
+    const int socket_ = socket( AF_INET, SOCK_STREAM, 0 );
+    if( socket_ < 0 )
+    {
+        perror( "socket() ERROR" );
+        exit( 2 );
+    }
+    socklen_t len = sizeof( serwer );
+    
+    if( bind( socket_,( struct sockaddr * ) & serwer, len ) < 0 )
+    {
+        perror( "bind() ERROR" );
+        exit( 3 );
+    }
+   
+    if( listen( socket_, MAX_CONNECTION ) < 0 )
+    {
+        perror( "listen() ERROR" );
+        exit( 4 );
+    }
+   
+    printf( "Waiting for connection...\n" );
+    
+    const int clientSocket = accept( socket_,( struct sockaddr * ) & client, & len );
+    if( clientSocket < 0 )
+    {
+	perror( "accept() ERROR" );
+	return -1;
+    }
+    bool alreadyCounting = false;
+    
     // Automagically call PylonInitialize and PylonTerminate to ensure the pylon runtime system
     // is initialized during the lifetime of this object.
     Pylon::PylonAutoInitTerm autoInitTerm;
@@ -67,7 +124,7 @@ int main(int argc, char* argv[])
         // Start the grabbing of c_countOfImagesToGrab images.
         // The camera device is parameterized with a default configuration which
         // sets up free-running continuous acquisition.
-        camera.StartGrabbing( c_countOfImagesToGrab);
+        camera.StartGrabbing( GrabStrategy_LatestImageOnly);
 
         // This smart pointer will receive the grab result data.
         CGrabResultPtr ptrGrabResult;
@@ -125,9 +182,19 @@ int main(int argc, char* argv[])
 			Rect boundRect = boundingRect(contours[i]);
 			if (boundRect.area() > 200 && (boundRect.width < 70 || boundRect.height < 70))
 			{
-			std::cout << "Coordinates: X = " << boundRect.tl().x + 1 / 2 * boundRect.br().x
-                    << ", Y = , " << boundRect.tl().y - 1 / 2 * boundRect.br().y << endl;   
+			x_s = boundRect.tl().x + 1 / 2 * boundRect.br().x;
+			y_s = boundRect.tl().y - 1 / 2 * boundRect.br().y;
+			std::cout 
+			<< "Coordinates: X = " << x_s
+			<< ", Y = , " << y_s << endl;
 			rectangle(background, boundRect.tl(), boundRect.br(), (0, 0, 0), 3);
+			
+			sprintf(buffer,"{\"X\": %d, \"Y\": %d}\n", x_s, y_s);
+			if( send( clientSocket, buffer, strlen( buffer ), 0 ) <= 0 )
+			{
+				perror( "send() ERROR" );
+				exit( 6 );
+			}
 			}  
 		}
 	
@@ -167,3 +234,4 @@ int main(int argc, char* argv[])
 
     return exitCode;
 }
+
